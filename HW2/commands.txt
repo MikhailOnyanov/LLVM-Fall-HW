@@ -1,0 +1,11 @@
+# Сборка плагина
+clang++ -fPIC -shared AppIRTracePass.cpp -o libAppIRTrace.so \
+    `llvm-config --cxxflags --ldflags --system-libs --libs core passes irreader` 
+
+
+# Компиляция с плагином
+clang -fpass-plugin=./libAppIRTrace.so \
+    ../HW1/app.c ../HW1/sim.c ../HW1/start.c ../HW1/grid.c \
+    -I/opt/homebrew/Cellar/sdl2/2.32.10/include/SDL2 \
+    -L/opt/homebrew/Cellar/sdl2/2.32.10/lib -lSDL2 \
+    ./log.c -O2
