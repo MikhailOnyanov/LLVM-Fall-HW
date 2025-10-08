@@ -1,7 +1,10 @@
-; ModuleID = 'logic.c'
-source_filename = "logic.c"
+; ModuleID = 'app.c'
+source_filename = "app.c"
 target datalayout = "e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-n32:64-S128-Fn32"
 target triple = "arm64-apple-macosx15.0.0"
+
+@app.field = internal global [16384 x i32] zeroinitializer, align 4
+@app.nextField = internal global [16384 x i32] zeroinitializer, align 4
 
 ; Function Attrs: mustprogress nofree norecurse nosync nounwind optsize ssp willreturn memory(argmem: write) uwtable(sync)
 define void @initEmptyField(ptr noundef writeonly captures(none) %0, i32 noundef %1) local_unnamed_addr #0 {
@@ -93,7 +96,7 @@ define void @stepLife(i32 noundef %0, ptr noundef readonly captures(none) %1, pt
 14:                                               ; preds = %7, %14
   %15 = phi i64 [ 0, %7 ], [ %29, %14 ]
   %16 = trunc nuw nsw i64 %15 to i32
-  %17 = tail call i32 @countNeighbours(i32 noundef %16, i32 noundef %9, ptr noundef %1, i32 noundef %0) #7
+  %17 = tail call i32 @countNeighbours(i32 noundef %16, i32 noundef %9, ptr noundef %1, i32 noundef %0) #8
   %18 = mul nuw nsw i64 %15, %6
   %19 = add nuw nsw i64 %18, %8
   %20 = getelementptr inbounds nuw i32, ptr %1, i64 %19
@@ -135,7 +138,7 @@ define void @randomizeField(ptr noundef writeonly captures(none) %0, i32 noundef
 
 13:                                               ; preds = %6, %13
   %14 = phi i64 [ 0, %6 ], [ %21, %13 ]
-  %15 = tail call i32 @simRand() #8
+  %15 = tail call i32 @simRand() #9
   %16 = srem i32 %15, 5
   %17 = icmp eq i32 %16, 0
   %18 = zext i1 %17 to i32
@@ -150,11 +153,59 @@ define void @randomizeField(ptr noundef writeonly captures(none) %0, i32 noundef
 ; Function Attrs: optsize
 declare i32 @simRand() local_unnamed_addr #4
 
+; Function Attrs: nounwind optsize ssp uwtable(sync)
+define void @app() local_unnamed_addr #3 {
+  tail call void @llvm.memset.p0.i64(ptr noundef nonnull align 4 dereferenceable(65536) @app.field, i8 0, i64 65536, i1 false), !tbaa !6
+  br label %1
+
+1:                                                ; preds = %4, %0
+  %2 = phi i64 [ 0, %0 ], [ %5, %4 ]
+  %3 = getelementptr inbounds nuw i32, ptr @app.field, i64 %2
+  br label %7
+
+4:                                                ; preds = %7
+  %5 = add nuw nsw i64 %2, 1
+  %6 = icmp eq i64 %5, 128
+  br i1 %6, label %18, label %1
+
+7:                                                ; preds = %7, %1
+  %8 = phi i64 [ 0, %1 ], [ %15, %7 ]
+  %9 = tail call i32 @simRand() #9
+  %10 = srem i32 %9, 5
+  %11 = icmp eq i32 %10, 0
+  %12 = zext i1 %11 to i32
+  %13 = shl nuw nsw i64 %8, 9
+  %14 = getelementptr inbounds nuw i8, ptr %3, i64 %13
+  store i32 %12, ptr %14, align 4, !tbaa !6
+  %15 = add nuw nsw i64 %8, 1
+  %16 = icmp eq i64 %15, 128
+  br i1 %16, label %4, label %7
+
+17:                                               ; preds = %18
+  tail call void @renderField(i32 noundef 128, ptr noundef nonnull @app.field) #9
+  ret void
+
+18:                                               ; preds = %4, %18
+  %19 = phi i32 [ %20, %18 ], [ 0, %4 ]
+  tail call void @renderField(i32 noundef 128, ptr noundef nonnull @app.field) #9
+  tail call void @stepLife(i32 noundef 128, ptr noundef nonnull @app.field, ptr noundef nonnull @app.nextField) #8
+  tail call void @llvm.memcpy.p0.p0.i64(ptr noundef nonnull align 4 dereferenceable(65536) @app.field, ptr noundef nonnull align 4 dereferenceable(65536) @app.nextField, i64 65536, i1 false), !tbaa !6
+  %20 = add nuw nsw i32 %19, 1
+  %21 = icmp eq i32 %20, 2000
+  br i1 %21, label %17, label %18
+}
+
+; Function Attrs: optsize
+declare void @renderField(i32 noundef, ptr noundef) local_unnamed_addr #4
+
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
 declare void @llvm.memset.p0.i64(ptr writeonly captures(none), i8, i64, i1 immarg) #5
 
 ; Function Attrs: nocallback nofree nosync nounwind speculatable willreturn memory(none)
 declare i32 @llvm.umax.i32(i32, i32) #6
+
+; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: readwrite)
+declare void @llvm.memcpy.p0.p0.i64(ptr noalias writeonly captures(none), ptr noalias readonly captures(none), i64, i1 immarg) #7
 
 attributes #0 = { mustprogress nofree norecurse nosync nounwind optsize ssp willreturn memory(argmem: write) uwtable(sync) "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+ccpp,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a" }
 attributes #1 = { nofree norecurse nosync nounwind optsize ssp memory(argmem: read) uwtable(sync) "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+ccpp,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a" }
@@ -163,8 +214,9 @@ attributes #3 = { nounwind optsize ssp uwtable(sync) "frame-pointer"="non-leaf" 
 attributes #4 = { optsize "frame-pointer"="non-leaf" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="apple-m1" "target-features"="+aes,+altnzcv,+ccdp,+ccidx,+ccpp,+complxnum,+crc,+dit,+dotprod,+flagm,+fp-armv8,+fp16fml,+fptoint,+fullfp16,+jsconv,+lse,+neon,+pauth,+perfmon,+predres,+ras,+rcpc,+rdm,+sb,+sha2,+sha3,+specrestrict,+ssbs,+v8.1a,+v8.2a,+v8.3a,+v8.4a,+v8a" }
 attributes #5 = { nocallback nofree nounwind willreturn memory(argmem: write) }
 attributes #6 = { nocallback nofree nosync nounwind speculatable willreturn memory(none) }
-attributes #7 = { optsize }
-attributes #8 = { nounwind optsize }
+attributes #7 = { nocallback nofree nounwind willreturn memory(argmem: readwrite) }
+attributes #8 = { optsize }
+attributes #9 = { nounwind optsize }
 
 !llvm.module.flags = !{!0, !1, !2, !3, !4}
 !llvm.ident = !{!5}

@@ -2,23 +2,21 @@ LLVM_CLANG := clang
 CSTD       := -std=c99
 INCLUDES   := -I.
 
-LOGIC_SRC := logic.c
-LOGIC_HDR := logic.h sim.h
-LOGIC_DEPS := $(LOGIC_SRC) $(LOGIC_HDR)
+LOGIC_SRC := app.c
 
 # Карта "цель -> флаги оптимизации"
-logic_O1.ll logic_O1.bc: OPT := -O1
-logic_Os.ll logic_Os.bc: OPT := -Os
+app_O1.ll app_O1.bc: OPT := -O1
+app_Os.ll app_Os.bc: OPT := -Os
 
-IR_O1  : logic_O1.ll
-IR_Os  : logic_Os.ll
-BC_O1  : logic_O1.bc
-BC_Os  : logic_Os.bc
+IR_O1  : app_O1.ll
+IR_Os  : app_Os.ll
+BC_O1  : app_O1.bc
+BC_Os  : app_Os.bc
 
 # Правило для .ll
-logic_%.ll: $(LOGIC_DEPS)
+app_%.ll: 
 	$(LLVM_CLANG) $(CSTD) $(INCLUDES) -S -emit-llvm $(OPT) $(LOGIC_SRC) -o $@
 
 # Правило для .bc
-logic_%.bc: $(LOGIC_DEPS)
+app_%.bc: 
 	$(LLVM_CLANG) $(CSTD) $(INCLUDES) -c -emit-llvm $(OPT) $(LOGIC_SRC) -o $@
