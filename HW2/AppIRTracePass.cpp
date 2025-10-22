@@ -3,12 +3,12 @@
 // графического приложения (только для логического модуля - app.c) на -O1/2/3/s 
 // (пропуская User, если это phi*). Код Pass выложить в репозиторий. 
 
-// Провести анализ часто повторяемых паттернов (длина паттерна: 1-5 инструкций). ё
+// Провести анализ часто повторяемых паттернов (длина паттерна: 1-5 инструкций).
 // Собранную статистику выложить в репозиторий.
 
 // Задание со звёздочкой: при нахождении операнда из инструкции phi, печатать инструкции, используемые в операндах phi.
 // Пример: запись shl <- phi заменяется на две записи shl <- add и shl <- sub,
-// если этот phi  использует в качестве операндов add и  sub.
+// если этот phi использует в качестве операндов add и sub.
 
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Module.h"
@@ -149,9 +149,9 @@ struct AppIRTracePass : public PassInfoMixin<AppIRTracePass> {
 extern "C" LLVM_ATTRIBUTE_WEAK PassPluginLibraryInfo llvmGetPassPluginInfo() {
     return {LLVM_PLUGIN_API_VERSION, "AppIRTracePass", "1.0",
         [](PassBuilder &PB) {
-            PB.registerPipelineStartEPCallback([](ModulePassManager &MPM, auto) {
+            // Изменено: регистрируем Pass после оптимизаций
+            PB.registerOptimizerLastEPCallback([](ModulePassManager &MPM, auto) {
                 MPM.addPass(AppIRTracePass{});
-                return true;
             });
         }};
 }
