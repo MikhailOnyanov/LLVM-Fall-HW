@@ -9,3 +9,20 @@ clang -fpass-plugin=./libAppIRTrace.so \
     -I/opt/homebrew/Cellar/sdl2/2.32.10/include/SDL2 \
     -L/opt/homebrew/Cellar/sdl2/2.32.10/lib -lSDL2 \
     ./log.c -O2
+
+
+# Компиляция с плагином 2
+clang -fpass-plugin=./libAppIRTrace.so \
+    ../HW1/app.c ../HW1/sim.c ../HW1/start.c ../HW1/grid.c \
+    -I/opt/homebrew/Cellar/sdl2/2.32.10/include/SDL2 \
+    -L/opt/homebrew/Cellar/sdl2/2.32.10/lib -lSDL2 \
+    ./log.c ./allInstrLogger.c -O2
+
+# Компиляция с плагином 3
+# Инструментирование только app.c
+clang ../HW1/app.c -c -fpass-plugin=./libAppIRTrace.so -O2
+
+# Компиляция и линковка остальных файлов
+clang ../HW1/start.c ../HW1/sim.c ../HW1/grid.c ./log.c ./allInstrLogger.c app.o \
+    -I/opt/homebrew/Cellar/sdl2/2.32.10/include/SDL2 \
+    -L/opt/homebrew/Cellar/sdl2/2.32.10/lib -lSDL2 -O2
