@@ -1,5 +1,0 @@
-clang++ Pass6_cfg.cpp -fPIC -shared $(llvm-config --cxxflags --ldflags --system-libs --libs core irreader passes support) -o libPass.so
-# С
-clang -fpass-plugin=./libPass.so log.c ../SDL/sim.c ../SDL/app2.c ../SDL/start.c \ 
--I/opt/homebrew/Cellar/sdl2/2.32.10/include \
--L/opt/homebrew/Cellar/sdl2/2.32.10/lib -lSDL2

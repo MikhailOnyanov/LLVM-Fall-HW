@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 
-#define GENERATIONS 2000
+#define GENERATIONS 10
 
 // Заполняет поле нулями
 void initEmptyField(int field[], int size)

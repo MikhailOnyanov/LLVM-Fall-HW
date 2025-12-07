@@ -1,64 +1,67 @@
-#!/usr/bin/env python3
-import collections
-import re
-import sys
-from tqdm import tqdm
+import argparse
+from collections import Counter
+from pathlib import Path
 
 
-def analyze_patterns(trace_file, max_pattern_length=5):
-    instructions = []
+def collect_patterns(trace_path: Path, max_len: int, top: int, out_path: Path) -> None:
+    if not trace_path.exists():
+        raise SystemExit(f"Trace file not found: {trace_path}")
 
-    call_re = re.compile(r"CALL '([^']+)' -> '([^']+)'")
-    binop_re = re.compile(r"In function '([^']+)': ([^=]+)=([^a-zA-Z0-9]*)\s*(\S+)\s+(\S+)")
+    instructions = [
+        line.strip()
+        for line in trace_path.read_text().splitlines()
+        if line.strip()
+    ]
 
-    # --- Считаем количество строк для прогресс-бара чтения ---
-    with open(trace_file, 'r') as f:
-        total_lines = sum(1 for _ in f)
+    lines: list[str] = []
 
-    with open(trace_file, 'r') as f:
-        for line in tqdm(f, total=total_lines, desc="Чтение и парсинг трассы"):
-            line = line.strip()
+    for size in range(1, max_len + 1):
+        counter: Counter[tuple[str, ...]] = Counter()
+        for idx in range(len(instructions) - size + 1):
+            window = tuple(instructions[idx : idx + size])
+            counter[window] += 1
 
-            # CALL pattern: CALL 'A' -> 'B'
-            if "CALL" in line:
-                m = call_re.search(line)
-                if m:
-                    caller, callee = m.groups()
-                    instructions.append((caller, callee))
-                    continue
+        lines.append(f"\nTop patterns of length {size}:")
+        for pattern, count in counter.most_common(top):
+            printable = " -> ".join(pattern)
+            lines.append(f"{count:5} | {printable}")
 
-            # Binary operation pattern: X = Y op Z
-            if "In function" in line and "=" in line:
-                try:
-                    parts = line.split(":", 1)[1].strip()
-                    lhs, rhs = parts.split("=", 1)
-                    lhs = lhs.strip()
-                    rhs = rhs.strip()
-                    instructions.append((lhs, rhs))
-                except ValueError:
-                    continue
+    report = "\n".join(lines) + "\n"
+    print(report, end="")
+    out_path.write_text(report)
 
-    pattern_stats = collections.Counter()
 
-    # --- Прогресс бар для подсчета паттернов ---
-    for length in tqdm(range(1, max_pattern_length + 1), desc="Анализ паттернов"):
-        for i in tqdm(range(len(instructions) - length + 1), leave=False, desc=f"Длина {length}"):
-            pattern = tuple(instructions[i:i + length])
-            pattern_stats[pattern] += 1
-
-    return pattern_stats.most_common()
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Count frequent IR instruction patterns (length 1-5)."
+    )
+    parser.add_argument(
+        "--trace",
+        type=Path,
+        default=Path("ir_trace.log"),
+        help="Path to the instruction trace file (default: ir_trace.log)",
+    )
+    parser.add_argument(
+        "--max-len",
+        type=int,
+        default=5,
+        help="Maximum pattern length to evaluate (default: 5).",
+    )
+    parser.add_argument(
+        "--top",
+        type=int,
+        default=20,
+        help="How many top patterns to print per length (default: 20).",
+    )
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=Path("patterns_report.txt"),
+        help="Where to save the analysis report (default: patterns_report.txt).",
+    )
+    args = parser.parse_args()
+    collect_patterns(args.trace, args.max_len, args.top, args.out)
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python analyze_patterns.py <trace_file>")
-        sys.exit(1)
-
-    patterns = analyze_patterns(sys.argv[1])
-
-    print("\nTop patterns found:")
-    for pattern, count in patterns[:20]:
-        print(f"Count: {count}")
-        for user, operand in pattern:
-            print(f"  {user} <- {operand}")
-        print()
+    main()

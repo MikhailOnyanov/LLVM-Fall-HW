@@ -23,11 +23,10 @@ void simInit()
 
 void simExit()
 {
+    // Программа завершает симуляцию сама, поэтому не ждём ручного закрытия окна
     SDL_Event event;
-    while (1)
-    {
-        if (SDL_PollEvent(&event) && event.type == SDL_QUIT)
-            break;
+    while (SDL_PollEvent(&event)) {
+        // просто вычитываем очередь, чтобы корректно завершиться
     }
     SDL_DestroyRenderer(Renderer);
     SDL_DestroyWindow(Window);

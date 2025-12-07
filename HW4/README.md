@@ -7,9 +7,9 @@
 4) С генерацией IR эквивалентов для всех инструкций
 
 Примеры:
-2) https://github.com/lisitsynSA/llvm_course/blob/main/SDL/IRGen/app.s
-3) https://github.com/lisitsynSA/llvm_course/blob/main/SDL/IRGen/app_asm_IRgen_1.cpp
-4) https://github.com/lisitsynSA/llvm_course/blob/main/SDL/IRGen/app_asm_IRgen_2.cpp
+1) https://github.com/lisitsynSA/llvm_course/blob/main/SDL/IRGen/app.s
+2) https://github.com/lisitsynSA/llvm_course/blob/main/SDL/IRGen/app_asm_IRgen_1.cpp
+3) https://github.com/lisitsynSA/llvm_course/blob/main/SDL/IRGen/app_asm_IRgen_2.cpp
 
 Продвинутый пример (1: симуляция, 2: IR c внешними функциями, 3: только IR):
 https://github.com/lisitsynSA/llvm_course/tree/main/Sim

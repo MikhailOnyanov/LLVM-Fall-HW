@@ -1,0 +1,108 @@
+
+Top patterns of length 1:
+2151552 | add
+1654912 | getelementptr
+1474560 | load
+1310720 | sext
+1310720 | insertelement
+853386 | icmp
+655360 | mul
+511744 | srem
+183061 | br
+180256 | call
+180234 | zext
+180224 | store
+165120 | trunc
+163840 | bitcast
+163840 | and
+163840 | select
+16384 | shl
+   11 | ret
+
+Top patterns of length 2:
+1474560 | getelementptr -> load
+1310720 | add -> sext
+1310720 | sext -> getelementptr
+1146880 | insertelement -> insertelement
+983040 | load -> add
+655360 | mul -> add
+491520 | srem -> mul
+330240 | add -> srem
+181642 | icmp -> br
+181632 | add -> icmp
+180224 | getelementptr -> store
+180224 | store -> add
+165120 | br -> trunc
+165120 | trunc -> add
+165120 | add -> add
+163840 | load -> srem
+163840 | load -> insertelement
+163840 | insertelement -> icmp
+163840 | icmp -> bitcast
+163840 | bitcast -> call
+
+Top patterns of length 3:
+1310720 | add -> sext -> getelementptr
+1310720 | sext -> getelementptr -> load
+983040 | getelementptr -> load -> add
+983040 | insertelement -> insertelement -> insertelement
+819200 | load -> add -> sext
+491520 | srem -> mul -> add
+491520 | mul -> add -> sext
+327680 | add -> srem -> mul
+181632 | add -> icmp -> br
+180224 | getelementptr -> store -> add
+180224 | store -> add -> icmp
+165120 | br -> trunc -> add
+165120 | trunc -> add -> add
+165120 | add -> add -> srem
+163840 | getelementptr -> load -> srem
+163840 | load -> srem -> mul
+163840 | load -> add -> srem
+163840 | getelementptr -> load -> insertelement
+163840 | load -> insertelement -> insertelement
+163840 | insertelement -> insertelement -> icmp
+
+Top patterns of length 4:
+1310720 | add -> sext -> getelementptr -> load
+983040 | sext -> getelementptr -> load -> add
+819200 | getelementptr -> load -> add -> sext
+819200 | load -> add -> sext -> getelementptr
+819200 | insertelement -> insertelement -> insertelement -> insertelement
+491520 | srem -> mul -> add -> sext
+491520 | mul -> add -> sext -> getelementptr
+327680 | add -> srem -> mul -> add
+180224 | getelementptr -> store -> add -> icmp
+180224 | store -> add -> icmp -> br
+165120 | br -> trunc -> add -> add
+165120 | trunc -> add -> add -> srem
+163840 | add -> add -> srem -> mul
+163840 | sext -> getelementptr -> load -> srem
+163840 | getelementptr -> load -> srem -> mul
+163840 | load -> srem -> mul -> add
+163840 | getelementptr -> load -> add -> srem
+163840 | load -> add -> srem -> mul
+163840 | sext -> getelementptr -> load -> insertelement
+163840 | getelementptr -> load -> insertelement -> insertelement
+
+Top patterns of length 5:
+983040 | add -> sext -> getelementptr -> load -> add
+819200 | sext -> getelementptr -> load -> add -> sext
+819200 | getelementptr -> load -> add -> sext -> getelementptr
+819200 | load -> add -> sext -> getelementptr -> load
+655360 | insertelement -> insertelement -> insertelement -> insertelement -> insertelement
+491520 | srem -> mul -> add -> sext -> getelementptr
+491520 | mul -> add -> sext -> getelementptr -> load
+327680 | add -> srem -> mul -> add -> sext
+180224 | getelementptr -> store -> add -> icmp -> br
+165120 | br -> trunc -> add -> add -> srem
+163840 | trunc -> add -> add -> srem -> mul
+163840 | add -> add -> srem -> mul -> add
+163840 | add -> sext -> getelementptr -> load -> srem
+163840 | sext -> getelementptr -> load -> srem -> mul
+163840 | getelementptr -> load -> srem -> mul -> add
+163840 | load -> srem -> mul -> add -> sext
+163840 | sext -> getelementptr -> load -> add -> srem
+163840 | getelementptr -> load -> add -> srem -> mul
+163840 | load -> add -> srem -> mul -> add
+163840 | add -> sext -> getelementptr -> load -> insertelement

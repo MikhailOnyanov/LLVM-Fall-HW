@@ -1,10 +1,14 @@
 #include <stdio.h>
 
-// Лог всех инструкций (кроме PHI, Call, Binary и Return)
-// funcName  - имя функции, где находится инструкция
-// instrName - название инструкции (opcode)
-// valID     - уникальный идентификатор инструкции (адрес в памяти)
-void allInstrLogger(char *funcName, char *instrName, long int valID) {
-    printf("[LOG] In function '%s': instruction '%s' {%ld}\n",
-           funcName, instrName, valID);
+FILE *get_instruction_file(void);
+FILE *get_use_file(void);
+
+void log_instruction(const char *opcode) {
+  FILE *f = get_instruction_file();
+  fprintf(f, "%s\n", opcode);
+}
+
+void log_use(const char *user, const char *operand) {
+  FILE *f = get_use_file();
+  fprintf(f, "%s <- %s\n", user, operand);
 }

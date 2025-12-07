@@ -1,157 +1,115 @@
-// С помощью инструментирующего Pass собрать (в рантайме) 
-// трассу исполненных IR инструкций / трассу использования инструкций (User <- Operand)
-// графического приложения (только для логического модуля - app.c) на -O1/2/3/s 
-// (пропуская User, если это phi*). Код Pass выложить в репозиторий. 
-
-// Провести анализ часто повторяемых паттернов (длина паттерна: 1-5 инструкций).
-// Собранную статистику выложить в репозиторий.
-
-// Задание со звёздочкой: при нахождении операнда из инструкции phi, печатать инструкции, используемые в операндах phi.
-// Пример: запись shl <- phi заменяется на две записи shl <- add и shl <- sub,
-// если этот phi использует в качестве операндов add и sub.
-
+#include "llvm/Config/llvm-config.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/Module.h"
-#include "llvm/IR/Verifier.h"
+#include "llvm/IR/Instruction.h"
+#include "llvm/IR/InstIterator.h"
+#include "llvm/IR/PassManager.h"
+#include "llvm/IR/Value.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
+#include "llvm/Support/raw_ostream.h"
+
 using namespace llvm;
 
-struct AppIRTracePass : public PassInfoMixin<AppIRTracePass> {
-    Type *voidType;
-    Type *int8PtrTy;
-    Type *int32Ty;
-    Type *int64Ty;
+namespace {
 
-    bool isFuncLogger(StringRef name) {
-        return name == "binOptLogger" || name == "callLogger" ||
-               name == "funcStartLogger" || name == "funcEndLogger" ||
-               name == "resIntLogger";
-    }
+std::string describeValue(Value *V) {
+  if (auto *I = dyn_cast<Instruction>(V)) {
+    return I->getOpcodeName();
+  }
 
-    bool insertFuncStartLog(Module &M, Function &F, IRBuilder<> &builder) {
-        ArrayRef<Type *> params = {int8PtrTy};
-        FunctionType *ftype = FunctionType::get(voidType, params, false);
-        FunctionCallee func = M.getOrInsertFunction("funcStartLogger", ftype);
+  if (auto *A = dyn_cast<Argument>(V)) {
+    if (A->hasName())
+      return ("arg:" + A->getName()).str();
+    return "arg";
+  }
 
-        BasicBlock &entryBB = F.getEntryBlock();
-        builder.SetInsertPoint(&entryBB.front());
-        Value *funcName = builder.CreateGlobalStringPtr(F.getName());
-        builder.CreateCall(func, {funcName});
-        return true;
-    }
+  if (auto *C = dyn_cast<Constant>(V)) {
+    std::string Text;
+    raw_string_ostream OS(Text);
+    C->printAsOperand(OS, /*PrintType=*/false);
+    return OS.str();
+  }
 
-    bool insertCallLog(Module &M, Function &F, IRBuilder<> &builder) {
-        ArrayRef<Type *> callParams = {int8PtrTy, int8PtrTy, int64Ty};
-        FunctionType *callFT = FunctionType::get(voidType, callParams, false);
-        FunctionCallee callFunc = M.getOrInsertFunction("callLogger", callFT);
+  return "value";
+}
 
-        ArrayRef<Type *> resParams = {int64Ty, int64Ty};
-        FunctionType *resFT = FunctionType::get(voidType, resParams, false);
-        FunctionCallee resFunc = M.getOrInsertFunction("resIntLogger", resFT);
-
-        bool inserted = false;
-
-        for (BasicBlock &BB : F) {
-            for (Instruction &I : BB) {
-                if (isa<PHINode>(&I)) continue; // пропускаем phi
-
-                if (auto *call = dyn_cast<CallInst>(&I)) {
-                    Function *callee = call->getCalledFunction();
-                    if (callee && !isFuncLogger(callee->getName())) {
-                        builder.SetInsertPoint(call);
-                        Value *calleeName = builder.CreateGlobalStringPtr(callee->getName());
-                        Value *funcName = builder.CreateGlobalStringPtr(F.getName());
-                        Value *valID = ConstantInt::get(int64Ty, (int64_t)&I);
-                        builder.CreateCall(callFunc, {funcName, calleeName, valID});
-                        inserted = true;
-
-                        if (!call->getType()->isVoidTy()) {
-                            builder.SetInsertPoint(call->getNextNode());
-                            builder.CreateCall(resFunc, {call, valID});
-                        }
-                    }
-                }
-            }
-        }
-        return inserted;
-    }
-
-    bool insertFuncEndLog(Module &M, Function &F, IRBuilder<> &builder) {
-        ArrayRef<Type *> params = {int8PtrTy, int64Ty};
-        FunctionType *ftype = FunctionType::get(voidType, params, false);
-        FunctionCallee func = M.getOrInsertFunction("funcEndLogger", ftype);
-
-        bool inserted = false;
-        for (BasicBlock &BB : F) {
-            for (Instruction &I : BB) {
-                if (isa<PHINode>(&I)) continue;
-
-                if (auto *ret = dyn_cast<ReturnInst>(&I)) {
-                    builder.SetInsertPoint(ret);
-                    Value *funcName = builder.CreateGlobalStringPtr(F.getName());
-                    Value *valID = ConstantInt::get(int64Ty, (int64_t)&I);
-                    builder.CreateCall(func, {funcName, valID});
-                    inserted = true;
-                }
-            }
-        }
-        return inserted;
-    }
-
-    bool insertBinOpLog(Module &M, Function &F, IRBuilder<> &builder) {
-        ArrayRef<Type *> params = {int32Ty, int32Ty, int32Ty, int8PtrTy, int8PtrTy, int64Ty};
-        FunctionType *ftype = FunctionType::get(voidType, params, false);
-        FunctionCallee func = M.getOrInsertFunction("binOptLogger", ftype);
-
-        bool inserted = false;
-        for (BasicBlock &BB : F) {
-            for (Instruction &I : BB) {
-                if (isa<PHINode>(&I)) continue;
-
-                if (auto *op = dyn_cast<BinaryOperator>(&I)) {
-                    builder.SetInsertPoint(op->getNextNode());
-                    Value *lhs = op->getOperand(0);
-                    Value *rhs = op->getOperand(1);
-                    Value *funcName = builder.CreateGlobalStringPtr(F.getName());
-                    Value *opName = builder.CreateGlobalStringPtr(op->getOpcodeName());
-                    Value *valID = ConstantInt::get(int64Ty, (int64_t)&I);
-                    builder.CreateCall(func, {op, lhs, rhs, opName, funcName, valID});
-                    inserted = true;
-                }
-            }
-        }
-        return inserted;
-    }
-
-    PreservedAnalyses run(Module &M, ModuleAnalysisManager &) {
-        LLVMContext &Ctx = M.getContext();
-        IRBuilder<> builder(Ctx);
-        voidType = Type::getVoidTy(Ctx);
-        int8PtrTy = Type::getInt8Ty(Ctx)->getPointerTo();
-        int32Ty = Type::getInt32Ty(Ctx);
-        int64Ty = Type::getInt64Ty(Ctx);
-
-        for (Function &F : M) {
-            if (F.isDeclaration() || isFuncLogger(F.getName()))
-                continue;
-
-            insertFuncStartLog(M, F, builder);
-            insertCallLog(M, F, builder);
-            insertFuncEndLog(M, F, builder);
-            insertBinOpLog(M, F, builder);
-        }
-
-        return PreservedAnalyses::none();
-    }
+class AppIRTracePass : public PassInfoMixin<AppIRTracePass> {
+public:
+  PreservedAnalyses run(Module &M, ModuleAnalysisManager &);
 };
 
-extern "C" LLVM_ATTRIBUTE_WEAK PassPluginLibraryInfo llvmGetPassPluginInfo() {
-    return {LLVM_PLUGIN_API_VERSION, "AppIRTracePass", "1.0",
-        [](PassBuilder &PB) {
-            // Изменено: регистрируем Pass после оптимизаций
-            PB.registerOptimizerLastEPCallback([](ModulePassManager &MPM, auto) {
-                MPM.addPass(AppIRTracePass{});
-            });
-        }};
+PreservedAnalyses AppIRTracePass::run(Module &M, ModuleAnalysisManager &) {
+  LLVMContext &Ctx = M.getContext();
+  Type *CharPtrTy = PointerType::get(Ctx, 0);
+
+  FunctionCallee LogInstruction =
+      M.getOrInsertFunction("log_instruction",
+                            FunctionType::get(Type::getVoidTy(Ctx), {CharPtrTy},
+                                              false));
+  FunctionCallee LogUse = M.getOrInsertFunction(
+      "log_use",
+      FunctionType::get(Type::getVoidTy(Ctx), {CharPtrTy, CharPtrTy}, false));
+
+  bool Changed = false;
+
+  for (Function &F : M) {
+    if (F.isDeclaration())
+      continue;
+
+    for (Instruction &I : instructions(F)) {
+      if (isa<PHINode>(I))
+        continue; // Skip phi as User
+
+      IRBuilder<> Builder(&I);
+      Value *UserStr = Builder.CreateGlobalString(I.getOpcodeName());
+
+      // Instruction execution trace
+      Builder.CreateCall(LogInstruction, {UserStr});
+
+      // User <- Operand trace
+      for (Value *Op : I.operands()) {
+        if (isa<MetadataAsValue>(Op))
+          continue;
+
+        if (auto *Phi = dyn_cast<PHINode>(Op)) {
+          for (Value *Incoming : Phi->incoming_values()) {
+            Value *OperandStr =
+                Builder.CreateGlobalString(describeValue(Incoming));
+            Builder.CreateCall(LogUse, {UserStr, OperandStr});
+          }
+          continue;
+        }
+
+        Value *OperandStr = Builder.CreateGlobalString(describeValue(Op));
+        Builder.CreateCall(LogUse, {UserStr, OperandStr});
+      }
+
+      Changed = true;
+    }
+  }
+
+  return Changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
+}
+
+} // namespace
+
+extern "C" ::llvm::PassPluginLibraryInfo llvmGetPassPluginInfo() {
+  return {LLVM_PLUGIN_API_VERSION, "AppIRTracePass", LLVM_VERSION_STRING,
+          [](PassBuilder &PB) {
+            PB.registerOptimizerLastEPCallback(
+                [](ModulePassManager &MPM, OptimizationLevel,
+                   ThinOrFullLTOPhase) { MPM.addPass(AppIRTracePass()); });
+
+            PB.registerPipelineParsingCallback(
+                [](StringRef Name, ModulePassManager &MPM,
+                   ArrayRef<PassBuilder::PipelineElement>) {
+                  if (Name == "app-ir-trace") {
+                    MPM.addPass(AppIRTracePass());
+                    return true;
+                  }
+                  return false;
+                });
+          }};
 }

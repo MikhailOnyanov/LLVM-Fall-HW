@@ -1,23 +1,41 @@
 #include <stdio.h>
+#include <stdlib.h>
 
-void funcStartLogger(char *funcName) {
-  printf("[LOG] Start function '%s'\n", funcName);
+static FILE *instruction_file = NULL;
+static FILE *use_file = NULL;
+
+static void enable_buffering(FILE *f) {
+  static char buf[2][1 << 16];
+  static int idx = 0;
+  setvbuf(f, buf[idx], _IOFBF, sizeof(buf[0]));
+  idx = (idx + 1) % 2;
 }
 
-void callLogger(char *callerName, char *calleeName, long int valID) {
-  printf("[LOG] CALL '%s' -> '%s' {%ld}\n", callerName, calleeName, valID);
+static FILE *open_or_die(const char *path) {
+  FILE *f = fopen(path, "w");
+  if (!f) {
+    perror(path);
+    exit(1);
+  }
+  enable_buffering(f);
+  return f;
 }
 
-void resIntLogger(long int res, long int valID) {
-  printf("[LOG] Result %ld {%ld}\n", res, valID);
+FILE *get_instruction_file(void) {
+  if (!instruction_file)
+    instruction_file = open_or_die("ir_trace.log");
+  return instruction_file;
 }
 
-void funcEndLogger(char *funcName, long int valID) {
-  printf("[LOG] End function '%s' {%ld}\n", funcName, valID);
+FILE *get_use_file(void) {
+  if (!use_file)
+    use_file = open_or_die("ir_use.log");
+  return use_file;
 }
 
-void binOptLogger(int val, int arg0, int arg1, char *opName, char *funcName,
-                  long int valID) {
-  printf("[LOG] In function '%s': %d = %d %s %d {%ld}\n", funcName, val, arg0,
-         opName, arg1, valID);
+__attribute__((destructor)) static void close_logs(void) {
+  if (instruction_file)
+    fclose(instruction_file);
+  if (use_file)
+    fclose(use_file);
 }
