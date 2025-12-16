@@ -60,3 +60,10 @@ dkms.conf
 examples
 analysis.*
 *.log
+
+*
+
+!HW*/
+!gitignore
+!README.md
+!game-of-life.gif
