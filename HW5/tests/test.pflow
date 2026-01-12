@@ -1,0 +1,151 @@
+fun test1() {
+    result = 2 + 3;
+    assert(result, 5);
+}
+
+fun test2() {
+    result = 10 - 7;
+    assert(result, 3);
+}
+
+fun test3() {
+    result = 4 * 5;
+    assert(result, 20);
+}
+
+fun test4() {
+    result = 15 / 3;
+    assert(result, 5);
+}
+
+fun test5() {
+    result = 17 % 5;
+    assert(result, 2);
+}
+
+fun test6() {
+    result = 2 + 3 * 4;
+    assert(result, 14);
+}
+
+fun test7() {
+    x = 10;
+    y = 20;
+    result = x < y;
+    assert(result, 1);
+}
+
+fun test8() {
+    x = 10;
+    y = 20;
+    result = x > y;
+    assert(result, 0);
+}
+
+fun test9() {
+    x = 10;
+    result = x == 10;
+    assert(result, 1);
+}
+
+fun test10() {
+    x = 10;
+    result = x != 10;
+    assert(result, 0);
+}
+
+fun test11() {
+    x = 10;
+    result = x <= 10;
+    assert(result, 1);
+}
+
+fun test12() {
+    x = 10;
+    y = 20;
+    result = x >= y;
+    assert(result, 0);
+}
+
+fun test13() {
+    sum = 0;
+    for i in 0..10 {
+        sum = sum + i;
+    }
+    assert(sum, 45);
+}
+
+fun test14() {
+    count = 0;
+    for i in 0..5 {
+        for j in 0..3 {
+            count = count + 1;
+        }
+    }
+    assert(count, 15);
+}
+
+fun test15() {
+    x = 15;
+    if (x < 10) {
+        result = 0;
+    } else {
+        result = 1;
+    }
+    assert(result, 1);
+}
+
+fun test16() {
+    x = 15;
+    y = 25;
+    if (x < 20) {
+        if (y < 30) {
+            result = 1;
+        } else {
+            result = 2;
+        }
+    } else {
+        result = 3;
+    }
+    assert(result, 1);
+}
+
+fun test17() {
+    array arr[10];
+    arr[5] = 42;
+    result = arr[5];
+    assert(result, 42);
+}
+
+fun test18() {
+    array arr[10];
+    for i in 0..10 {
+        arr[i] = i * 2;
+    }
+    result = arr[7];
+    assert(result, 14);
+}
+
+fun app() {
+    test1();
+    test2();
+    test3();
+    test4();
+    test5();
+    test6();
+    test7();
+    test8();
+    test9();
+    test10();
+    test11();
+    test12();
+    test13();
+    test14();
+    test15();
+    test16();
+    test17();
+    test18();
+
+    pixel(0, 0, 65280);
+    show();
+}

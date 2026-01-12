@@ -1,0 +1,39 @@
+fun zero_params() result {
+    result = 42;
+}
+
+fun one_param(x) result {
+    result = x * 2;
+}
+
+fun two_params(a, b) sum {
+    sum = a + b;
+}
+
+fun three_params(x, y, z) result {
+    result = x + y + z;
+}
+
+fun five_params(a, b, c, d, e) result {
+    result = a + b + c + d + e;
+}
+
+fun app() {
+    r0 = zero_params();
+    assert(r0, 42);
+
+    r1 = one_param(10);
+    assert(r1, 20);
+
+    r2 = two_params(5, 7);
+    assert(r2, 12);
+
+    r3 = three_params(1, 2, 3);
+    assert(r3, 6);
+
+    r5 = five_params(1, 2, 3, 4, 5);
+    assert(r5, 15);
+
+    pixel(0, 0, 65280);
+    show();
+}

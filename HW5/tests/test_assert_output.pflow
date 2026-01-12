@@ -1,0 +1,12 @@
+fun app() {
+    result = 2 + 3;
+    assert(result, 5);
+
+    result = 10;
+    assert(result, 20); // fail
+    result = 7 * 3;
+    assert(result, 21);
+
+    pixel(0, 0, 65280);
+    show();
+}
